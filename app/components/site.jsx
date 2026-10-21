@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { CATALOG, CATALOG_COUNT, CATEGORY_INFO, ALL_PRODUCTS, getProduct, productLabel } from "./catalog-data";
 import { POSTS, getPost, formatDate } from "./blog-data";
 
@@ -41,7 +41,7 @@ const WHATSAPP_URL = `https://wa.me/${CONTACT.whatsapp}?text=${encodeURIComponen
 const NAV = [
   { label: "Home", href: "/" },
   { label: "About", href: "/about/" },
-  { label: "Products", href: "/products/" },
+  { label: "Products", href: "/products/", mega: true },
   { label: "Blog", href: "/blog/" },
   { label: "Contact", href: "/contact/" },
 ];
@@ -246,6 +246,177 @@ export function FloatingContact() {
   );
 }
 
+/* ───────────────────────────── Product range menu ───────────────────────────── */
+
+// Link to the Products page with a range (and optionally a category) pre-selected.
+const rangeHref = (groupId, catId) => `/products/?range=${groupId}${catId ? `&cat=${catId}` : ""}#catalogue`;
+const countIn = (cats) => cats.reduce((n, c) => n + c.items.length, 0);
+const RANGE_STYLE = {
+  housekeeping: { icon: "home", tint: "from-sky-50 to-violet-50", chip: "bg-sky-100 text-sky-700" },
+  concentrates: { icon: "drop", tint: "from-emerald-50 to-teal-50", chip: "bg-emerald-100 text-emerald-700" },
+  industrial: { icon: "factory", tint: "from-amber-50 to-orange-50", chip: "bg-amber-100 text-amber-700" },
+};
+
+// Products page reads ?range=&cat= so menu links open the right tab.
+export function CatalogueFromUrl() {
+  const params = useSearchParams();
+  const g = CATALOG.find((x) => x.id === params.get("range"));
+  const c = g?.cats.find((x) => x.id === params.get("cat"));
+  return <Catalogue key={`${g?.id}-${c?.id}`} showHead={false} initialGroup={g?.id} initialCat={c?.id} />;
+}
+
+function ProductsMegaMenu({ active }) {
+  const [open, setOpen] = useState(false);
+  const [el, setEl] = useState(null);
+  const timer = useRef(null);
+  const path = usePathname();
+  useEffect(() => setOpen(false), [path]);
+
+  const show = () => {
+    clearTimeout(timer.current);
+    setOpen(true);
+  };
+  const hide = () => {
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => setOpen(false), 150);
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e) => el && !el.contains(e.target) && setOpen(false);
+    const onKey = (e) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open, el]);
+
+  return (
+    <li ref={setEl} onMouseEnter={show} onMouseLeave={hide} className="static">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        aria-haspopup="true"
+        className={`inline-flex items-center gap-1 rounded-full px-4 py-2 text-sm font-medium transition hover:bg-ink/5 hover:text-ink ${active || open ? "bg-ink/5 text-ink" : "text-ink/70"}`}
+      >
+        Products <Icon name="chevron" className={`h-4 w-4 transition ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <div className="absolute inset-x-0 top-full z-50 px-4 pt-2 sm:px-6">
+          <div className="mx-auto max-w-7xl animate-fade-up rounded-2xl border border-ink/10 bg-white shadow-[0_24px_60px_-24px_rgba(11,27,58,.25)]">
+            <div className="grid grid-cols-[1fr_1fr_1fr_17rem] divide-x divide-ink/[0.07]">
+              {CATALOG.map((g) => (
+                <div key={g.id} className="p-6">
+                  <Link href={rangeHref(g.id)} onClick={() => setOpen(false)} className="group flex items-baseline justify-between gap-3">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink/45 transition group-hover:text-ink">{g.label}</span>
+                    <span className="text-[11px] tabular-nums text-ink/35">{countIn(g.cats)}</span>
+                  </Link>
+                  <ul className="mt-4 space-y-1">
+                    {g.cats.map((c) => (
+                      <li key={c.id}>
+                        <Link href={rangeHref(g.id, g.cats.length > 1 ? c.id : undefined)} onClick={() => setOpen(false)} className="group -mx-2 flex items-center justify-between rounded-lg px-2 py-1.5 text-[15px] text-ink/80 transition hover:bg-ink/[0.04] hover:text-ink">
+                          <span>{c.label}</span>
+                          <Icon name="arrow" className="h-3.5 w-3.5 -translate-x-1 text-ink/40 opacity-0 transition group-hover:translate-x-0 group-hover:opacity-100" />
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                  <Link href={rangeHref(g.id)} onClick={() => setOpen(false)} className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-aqua-deep hover:text-ink">
+                    View all {g.label.toLowerCase()} <Icon name="arrow" className="h-3.5 w-3.5" />
+                  </Link>
+                </div>
+              ))}
+
+              {/* Side panel */}
+              <div className="flex flex-col p-6">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink/45">Catalogues</p>
+                <ul className="mt-4 space-y-1">
+                  {CATALOGUES.map((c) => (
+                    <li key={c.href}>
+                      <a href={c.href} download={c.file} target="_blank" rel="noreferrer" onClick={() => setOpen(false)} className="group -mx-2 flex items-center gap-3 rounded-lg px-2 py-1.5 text-[15px] text-ink/80 transition hover:bg-ink/[0.04] hover:text-ink">
+                        <Icon name="download" className="h-4 w-4 text-ink/40 group-hover:text-ink" />
+                        <span className="flex-1">{c.title.replace(" catalogue", "")}</span>
+                        <span className="text-[11px] text-ink/35">PDF</span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-auto pt-6">
+                  <p className="text-sm leading-relaxed text-ink/60">Bulk orders, custom fragrances and private labels.</p>
+                  <Link href="/contact/#quote" onClick={() => setOpen(false)} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-ink px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-ink/90">
+                    Request a quote
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between border-t border-ink/[0.07] px-6 py-3.5 text-sm">
+              <span className="text-ink/50">{CATALOG_COUNT} products manufactured in Delhi</span>
+              <Link href="/products/" onClick={() => setOpen(false)} className="inline-flex items-center gap-1.5 font-semibold text-ink hover:text-aqua-deep">
+                Browse full catalogue <Icon name="arrow" className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+    </li>
+  );
+}
+
+function MobileProductsMenu({ onNavigate, active }) {
+  const [open, setOpen] = useState(false);
+  const [range, setRange] = useState(null);
+  return (
+    <div>
+      <button onClick={() => setOpen(!open)} aria-expanded={open} className={`flex w-full items-center justify-between rounded-2xl px-4 py-3 font-medium text-ink hover:bg-cream ${active ? "bg-cream" : ""}`}>
+        Products <Icon name="chevron" className={`h-4 w-4 transition ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="ml-4 border-l border-ink/10 pl-2">
+          <Link href="/products/" onClick={onNavigate} className="block rounded-xl px-3 py-2.5 text-sm font-semibold text-aqua-deep hover:bg-cream">View all products</Link>
+          {CATALOG.map((g) => {
+            const st = RANGE_STYLE[g.id] || RANGE_STYLE.housekeeping;
+            const expanded = range === g.id;
+            const multi = g.cats.length > 1;
+            return (
+              <div key={g.id}>
+                {multi ? (
+                  <button onClick={() => setRange(expanded ? null : g.id)} aria-expanded={expanded} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-ink hover:bg-cream">
+                    <Icon name={st.icon} className="h-4 w-4 text-aqua-deep" />
+                    <span className="flex-1 text-left">{g.label}</span>
+                    <span className="text-xs font-normal text-ink/40">{countIn(g.cats)}</span>
+                    <Icon name="chevron" className={`h-4 w-4 transition ${expanded ? "rotate-180" : ""}`} />
+                  </button>
+                ) : (
+                  <Link href={rangeHref(g.id)} onClick={onNavigate} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-ink hover:bg-cream">
+                    <Icon name={st.icon} className="h-4 w-4 text-aqua-deep" />
+                    <span className="flex-1">{g.label}</span>
+                    <span className="text-xs font-normal text-ink/40">{countIn(g.cats)}</span>
+                  </Link>
+                )}
+                {multi && expanded && (
+                  <div className="mb-1 ml-5 grid grid-cols-1 gap-0.5">
+                    <Link href={rangeHref(g.id)} onClick={onNavigate} className="rounded-lg px-3 py-2 text-sm text-ink/70 hover:bg-cream hover:text-ink">All {g.label}</Link>
+                    {g.cats.map((c) => (
+                      <Link key={c.id} href={rangeHref(g.id, c.id)} onClick={onNavigate} className="flex items-center justify-between rounded-lg px-3 py-2 text-sm text-ink/70 hover:bg-cream hover:text-ink">
+                        {c.label} <span className="text-xs text-ink/35">{c.items.length}</span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ───────────────────────────── 1. Navbar ───────────────────────────── */
 
 // Downloadable PDF brochures (files in /public/catalogue).
@@ -334,18 +505,22 @@ export function Navbar() {
           <a href={quoteHref} className="font-semibold text-white underline decoration-lemon underline-offset-4">get an instant quote</a>
         </p>
       </div>
-      <nav className={`transition-all duration-500 ${scrolled ? "bg-cream/80 shadow-[0_10px_40px_-20px_rgba(11,27,58,.35)] backdrop-blur-xl" : "bg-transparent"}`}>
+      <nav className={`relative transition-all duration-500 ${scrolled ? "bg-cream/80 shadow-[0_10px_40px_-20px_rgba(11,27,58,.35)] backdrop-blur-xl" : "bg-transparent"}`}>
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6">
           <Link href="/" className="flex items-center" aria-label="Asmi Enterprises home">
             <Image src="/logo.webp" alt="Asmi Enterprises" width={600} height={212} priority className="h-10 w-auto sm:h-12" />
           </Link>
 
           <ul className="hidden items-center gap-1 lg:flex">
-            {NAV.map((n) => (
-              <li key={n.href}>
-                <Link href={n.href} className={`rounded-full px-4 py-2 text-sm font-medium transition hover:bg-ink/5 hover:text-ink ${isActive(n.href) ? "bg-ink/5 text-ink" : "text-ink/70"}`}>{n.label}</Link>
-              </li>
-            ))}
+            {NAV.map((n) =>
+              n.mega ? (
+                <ProductsMegaMenu key={n.href} active={isActive(n.href)} />
+              ) : (
+                <li key={n.href}>
+                  <Link href={n.href} className={`rounded-full px-4 py-2 text-sm font-medium transition hover:bg-ink/5 hover:text-ink ${isActive(n.href) ? "bg-ink/5 text-ink" : "text-ink/70"}`}>{n.label}</Link>
+                </li>
+              )
+            )}
           </ul>
 
           <div className="hidden items-center gap-3 lg:flex">
@@ -365,9 +540,13 @@ export function Navbar() {
 
         {open && (
           <div className="mx-4 mb-4 rounded-3xl bg-white p-4 shadow-2xl lg:hidden">
-            {NAV.map((n) => (
-              <Link key={n.href} href={n.href} onClick={() => setOpen(false)} className={`block rounded-2xl px-4 py-3 font-medium text-ink hover:bg-cream ${isActive(n.href) ? "bg-cream" : ""}`}>{n.label}</Link>
-            ))}
+            {NAV.map((n) =>
+              n.mega ? (
+                <MobileProductsMenu key={n.href} active={isActive(n.href)} onNavigate={() => setOpen(false)} />
+              ) : (
+                <Link key={n.href} href={n.href} onClick={() => setOpen(false)} className={`block rounded-2xl px-4 py-3 font-medium text-ink hover:bg-cream ${isActive(n.href) ? "bg-cream" : ""}`}>{n.label}</Link>
+              )
+            )}
             <div className="mt-2 rounded-2xl bg-cream/70 p-1">
               <p className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-ink/45">Download catalogue</p>
               {CATALOGUES.map((c) => <CatalogueLink key={c.href} c={c} onClick={() => setOpen(false)} />)}
@@ -841,9 +1020,9 @@ function ScrollRow({ children, className = "", innerClassName = "", arrowClassNa
   );
 }
 
-export function Catalogue({ showHead = true }) {
-  const [groupId, setGroupId] = useState(CATALOG[0].id);
-  const [catId, setCatId] = useState("all");
+export function Catalogue({ showHead = true, initialGroup, initialCat }) {
+  const [groupId, setGroupId] = useState(initialGroup || CATALOG[0].id);
+  const [catId, setCatId] = useState(initialCat || "all");
   const group = CATALOG.find((g) => g.id === groupId);
   const cats = catId === "all" ? group.cats : group.cats.filter((c) => c.id === catId);
 
@@ -1566,11 +1745,13 @@ function Field({ label, name, type = "text", required, className = "" }) {
 export function Footer() {
   return (
     <footer className="bg-ink text-white">
-      <div className="mx-auto max-w-7xl px-4 pt-20 sm:px-6">
-        <p className="font-display text-[18vw] leading-none tracking-tighter text-white/[0.06] sm:text-[12vw]">asmi</p>
-        <div className="-mt-6 grid gap-12 pb-14 sm:-mt-10 md:grid-cols-4">
+      <div className="mx-auto max-w-7xl px-4 pt-16 sm:px-6 sm:pt-20">
+        <div className="grid gap-12 pb-14 md:grid-cols-4">
           <div className="md:col-span-2">
-            <p className="font-display text-3xl">Freshness, manufactured.</p>
+            <Link href="/" aria-label="Asmi Enterprises home" className="inline-flex rounded-2xl bg-white px-5 py-3 shadow-lg shadow-black/20 transition hover:-translate-y-0.5">
+              <Image src="/logo.webp" alt="Asmi Enterprises" width={600} height={212} className="h-12 w-auto sm:h-14" />
+            </Link>
+            <p className="mt-6 font-display text-3xl">Freshness, manufactured.</p>
             <p className="mt-3 max-w-md text-white/55">Manufacturer and wholesaler of hand wash, shower gel, dish wash, toilet & tap cleaners, air fresheners and industrial chemicals.</p>
             <div className="mt-6 flex gap-3">
               {SOCIALS.map((s) => (

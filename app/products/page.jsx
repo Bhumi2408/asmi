@@ -1,4 +1,5 @@
-import { PageHeader, Catalogue, CtaBand } from "../components/site";
+import { Suspense } from "react";
+import { PageHeader, Catalogue, CatalogueFromUrl, CtaBand } from "../components/site";
 
 export const metadata = {
   title: "Products",
@@ -15,7 +16,10 @@ export default function ProductsPage() {
         title="Our products"
         sub="Housekeeping cleaners in retail bottles and 5 L cans, 50 L concentrates, and industrial chemicals for boilers, cooling towers and RO plants."
       />
-      <Catalogue showHead={false} />
+      {/* Pre-rendered with the default tab; switches to ?range=&cat= in the browser. */}
+      <Suspense fallback={<Catalogue showHead={false} />}>
+        <CatalogueFromUrl />
+      </Suspense>
       <CtaBand />
     </>
   );
