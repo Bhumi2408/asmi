@@ -1854,7 +1854,7 @@ export function Footer() {
             <Link href="/" aria-label="Asmi Enterprises home" className="inline-flex rounded-2xl bg-white px-5 py-3 shadow-lg shadow-black/20 transition hover:-translate-y-0.5">
               <Image src="/logo.webp" alt="Asmi Enterprises" width={600} height={212} className="h-12 w-auto sm:h-14" />
             </Link>
-            <p className="mt-6 font-display text-3xl">housekeeping chemical manufacturer</p>
+            <p className="mt-6 font-display text-3xl">housekeeping chemical <br /> manufacturer</p>
             <div className="mt-6 flex gap-3">
               {SOCIALS.map((s) => (
                 <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label} className="grid h-11 w-11 place-items-center rounded-full border border-white/15 text-white/70 transition hover:border-lemon hover:bg-lemon hover:text-ink">
