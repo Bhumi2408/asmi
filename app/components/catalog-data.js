@@ -57,7 +57,7 @@ export const CATALOG = [
     blurb: "50 L concentrates — dilute with DM water for the best cost per litre.",
     cats: [
       { id: "conc", label: "50 L Concentrates", icon: "drop", items: [
-        { code: "A-6", name: "Toilet Cleaner Concentrate", img: "toilet-cleaner-concentrate", packs: ["50 L"], note: "Dilution 1:4" },
+        { code: "A-6", name: "Toilet Cleaner Concentrate", img: "toilet-cleaner-concentrate", packs: ["50 L"], note: "Use the standard dilution ratio for this product." },
         { code: "AH-1", name: "Hand Wash Concentrate", img: "hand-wash-concentrate", packs: ["50 L"], note: "Dilution 1:3" },
         { code: "A-3", name: "Glass Cleaner Concentrate", img: "glass-cleaner-concentrate", packs: ["50 L"], note: "Dilution 1:25" },
         { code: "A-11", name: "Dish Wash Concentrate", img: "dish-wash-concentrate", packs: ["50 L"], note: "Dilution 1:3" },
@@ -123,7 +123,7 @@ export const CATEGORY_INFO = {
   floor: "Floor cleaners and phenyls for everyday mopping of homes, offices, hospitals and institutions.",
   surface: "Glass cleaners, steel and wood polishes, and long-lasting air fresheners.",
   car: "Car polish and foam wash for a clean, glossy finish at home or at the car-care centre.",
-  conc: "50 L concentrates — dilute with DM water at the stated ratio for the lowest cost per litre.",
+  conc: "50 L concentrates for dilution with DM water. Follow the standard dilution ratio and preparation instructions for each product.",
   boiler: "Boiler water-treatment chemicals for pH control, sludge conditioning and oxygen scavenging.",
   cooling: "Cooling-tower chemicals that control scale, corrosion and microbial growth.",
   descaling: "Descaling and passivation chemicals for cleaning heat exchangers, pipelines and plant equipment.",
@@ -131,10 +131,95 @@ export const CATEGORY_INFO = {
   fire: "Combustion improvers that help boiler and furnace fuels burn more completely.",
 };
 
+// Product page copy is built around the individual product name so products
+// within the same category do not repeat the same description.
+export function productDescription(item, cat) {
+  if (item.description) return item.description;
+
+  const name = item.name;
+  if (cat.id === "personal") {
+    if (/hand wash/i.test(name)) return `${name} creates a comfortable, cleansing lather for frequent hand washing. Available in practical packs for homes, workplaces and guest washrooms.`;
+    if (/shower gel/i.test(name)) return `${name} is a liquid body cleanser for everyday bathing, with fragrance options to suit your preference.`;
+    return `${name} is made for everyday hair care, with a convenient 5 L pack for regular use and refill needs.`;
+  }
+  if (cat.id === "kitchen") {
+    if (/dish wash/i.test(name)) return `${name} is designed to clean everyday utensils and cookware, with handy pack sizes for home kitchens.`;
+    if (/detergent/i.test(name)) return `${name} is a liquid laundry detergent for washing clothes at home or in commercial laundry settings.`;
+    if (/whitener/i.test(name)) return `${name} supports laundry care by helping keep white fabrics looking bright during washing.`;
+    return `${name} is a heavy-duty degreaser for kitchen chimneys and hoods, where cooking grease and residue collect.`;
+  }
+  if (cat.id === "toilet") {
+    if (/toilet cleaner/i.test(name)) return `${name} is formulated for toilet bowl cleaning, helping loosen everyday soil and bathroom stains. Follow the product label for use and safety instructions.`;
+    if (/bleach/i.test(name)) return `${name} is a bleach product for suitable washroom cleaning tasks. Use only as directed on the product label and never mix with other cleaners.`;
+    if (/bathroom/i.test(name)) return `${name} is made for routine cleaning of bathroom surfaces, helping lift soap residue and everyday grime.`;
+    if (/tap/i.test(name)) return `${name} is designed to clean taps and compatible hard surfaces, helping remove water marks and surface deposits.`;
+    return `${name} is intended for cleaning compatible floor and wall tiles, helping remove everyday bathroom and household residue.`;
+  }
+  if (cat.id === "floor") {
+    if (/phenyl concentrate/i.test(name)) return `${name} is a concentrated floor-care product supplied for dilution. Follow the product label for the recommended preparation and use.`;
+    if (/phenyl/i.test(name)) return `${name} is a phenyl floor cleaner for routine mopping in homes and shared spaces.`;
+    return `${name} is suited to regular floor mopping in homes, offices and institutions, with fragrance options available.`;
+  }
+  if (cat.id === "surface") {
+    if (/glass cleaner/i.test(name)) return `${name} is designed for glass and other compatible hard surfaces, helping remove fingerprints and everyday marks.`;
+    if (/steel polish/i.test(name)) return `${name} is made to clean and polish compatible stainless-steel surfaces, helping restore a neat finish.`;
+    if (/wood polish/i.test(name)) return `${name} is intended for the care of compatible finished wood surfaces, leaving them clean and polished.`;
+    return `${name} adds fragrance to indoor spaces and is available in a range of scent options.`;
+  }
+  if (cat.id === "car") {
+    if (/polish/i.test(name)) return `${name} is an automotive finishing product for compatible vehicle surfaces, helping leave a clean, glossy appearance.`;
+    return `${name} is an automotive wash product for lifting road dirt and grime from vehicle exteriors. Use as directed on the label.`;
+  }
+  if (cat.id === "conc") {
+    const purpose = /toilet/i.test(name) ? "toilet bowl cleaning" : /hand wash/i.test(name) ? "hand washing" : /glass/i.test(name) ? "glass and compatible hard surfaces" : /dish wash/i.test(name) ? "utensil and cookware cleaning" : /detergent/i.test(name) ? "laundry washing" : /floor/i.test(name) ? "routine floor cleaning" : /metal/i.test(name) ? "cleaning compatible metal surfaces" : /polish/i.test(name) ? "polishing compatible surfaces" : "phenyl floor care";
+    return `${name} is supplied as a 50 L concentrate for ${purpose}. Dilute with DM water using the standard ratio and preparation instructions provided for this product.`;
+  }
+  if (cat.id === "boiler") {
+    if (/pH/i.test(name)) return `${name} (${item.code}) supports pH control in boiler-water treatment programs. Confirm the target range and dosing plan with your water-treatment professional.`;
+    if (/sludge/i.test(name)) return `${name} (${item.code}) is used in boiler-water programs to condition sludge and support its removal during blowdown.`;
+    if (/oxygen scavenger/i.test(name)) return `${name} (${item.code}) is an oxygen-scavenging chemical for boiler feed-water treatment programs. Dose according to water analysis and technical guidance.`;
+    return `${name} (${item.code}) is a multifunctional boiler-water treatment for ${/soft/i.test(name) ? "systems using softened feed water" : "systems using raw feed water"}. Select treatment and dosing based on the system's water analysis.`;
+  }
+  if (cat.id === "cooling") {
+    if (/anti-scalant/i.test(name)) return `${name} (${item.code}) helps control mineral scale in cooling-tower water-treatment programs. Dosing depends on water quality and operating conditions.`;
+    if (/anti-corrosion/i.test(name)) return `${name} (${item.code}) is used to help protect compatible metal surfaces in cooling-water systems from corrosion.`;
+    if (/alkalinity/i.test(name)) return `${name} (${item.code}) is used to manage alkalinity in cooling-tower water-treatment programs.`;
+    if (/dispersant/i.test(name)) return `${name} (${item.code}) helps keep suspended deposits dispersed in cooling-tower water for control through the treatment program.`;
+    if (/biocide/i.test(name)) return `${name} (${item.code}) is a biocide for microbial control in cooling-tower water. Use only with a suitable treatment plan and label directions.`;
+    return `${name} (${item.code}) supports biofilm and deposit control in cooling-tower water-treatment programs.`;
+  }
+  if (cat.id === "descaling") {
+    if (/silica/i.test(name)) return `${name} (${item.code}) is intended for silica-scale removal during industrial descaling and cleaning procedures.`;
+    if (/passivation/i.test(name)) return `${name} (${item.code}) is an alkaline passivation treatment used after cleaning compatible plant equipment.`;
+    if (/boil out/i.test(name)) return `${name} (${item.code}) is a chemical treatment for boil-out cleaning of suitable industrial equipment.`;
+    return `${name} (${item.code}) is a liquid descaler for removing scale from compatible heat-transfer and process equipment.`;
+  }
+  if (cat.id === "ro") {
+    if (/anti-scalant/i.test(name)) return `${name} (${item.code}) helps limit scale formation on reverse-osmosis membranes as part of a correctly designed pretreatment program.`;
+    if (/alkaline/i.test(name)) return `${name} (${item.code}) is an alkaline cleaner for organic and oily fouling on compatible RO membranes.`;
+    return `${name} (${item.code}) is an acidic descaling cleaner for mineral deposits on compatible RO membranes. Follow membrane and product guidance.`;
+  }
+  if (cat.id === "fire") {
+    const fuel = /bagasse/i.test(name) ? "bagasse, rice husk and wood" : /coal/i.test(name) ? "coal" : "pet coke";
+    return `${name} (${item.code}) is a combustion improver for ${fuel}-fired boilers and furnaces. Confirm suitability and application rate for your fuel and equipment.`;
+  }
+  const code = item.code ? ` (${item.code})` : "";
+  return `${name}${code} is part of Asmi's ${cat.label.toLowerCase()} range for commercial and industrial applications. Follow the product's technical guidance for selection, dosing and handling.`;
+}
+
 const slugify = (t) => t.toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
-// Give every product a stable URL slug, e.g. "toilet-cleaner" or "2003-anti-scalant".
-for (const g of CATALOG) for (const c of g.cats) for (const it of c.items) it.slug = slugify(it.code ? `${it.code} ${it.name}` : it.name);
+// Give every product a stable URL slug. Add its category only when a name
+// would otherwise collide with another product (for example, Phenyl Concentrate).
+const productSlugCounts = new Map();
+for (const g of CATALOG) for (const c of g.cats) for (const it of c.items) {
+  const base = slugify(it.code ? `${it.code} ${it.name}` : it.name);
+  productSlugCounts.set(base, (productSlugCounts.get(base) || 0) + 1);
+}
+for (const g of CATALOG) for (const c of g.cats) for (const it of c.items) {
+  const base = slugify(it.code ? `${it.code} ${it.name}` : it.name);
+  it.slug = productSlugCounts.get(base) > 1 ? `${base}-${c.id}` : base;
+}
 
 export const ALL_PRODUCTS = CATALOG.flatMap((g) => g.cats.flatMap((c) => c.items.map((item) => ({ item, group: g, cat: c }))));
 

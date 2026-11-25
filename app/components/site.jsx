@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { CATALOG, CATALOG_COUNT, CATEGORY_INFO, ALL_PRODUCTS, getProduct, productLabel } from "./catalog-data";
+import { CATALOG, CATALOG_COUNT, ALL_PRODUCTS, getProduct, productLabel, productDescription } from "./catalog-data";
 import { POSTS, getPost, formatDate } from "./blog-data";
 
 /* ───────────────────────────── Business data (edit here) ───────────────────────────── */
@@ -249,7 +249,9 @@ export function FloatingContact() {
 /* ───────────────────────────── Product range menu ───────────────────────────── */
 
 // Link to the Products page with a range (and optionally a category) pre-selected.
-const rangeHref = (groupId, catId) => `/products/?range=${groupId}${catId ? `&cat=${catId}` : ""}#catalogue`;
+const rangeHref = (groupId, catId) => catId
+  ? `/products/${groupId}/${catId}/`
+  : `/products/?range=${groupId}`;
 const countIn = (cats) => cats.reduce((n, c) => n + c.items.length, 0);
 const RANGE_STYLE = {
   housekeeping: { icon: "home", tint: "from-sky-50 to-violet-50", chip: "bg-sky-100 text-sky-700" },
@@ -318,7 +320,7 @@ function ProductsMegaMenu({ active }) {
                   <ul className="mt-4 space-y-1">
                     {g.cats.map((c) => (
                       <li key={c.id}>
-                        <Link href={rangeHref(g.id, g.cats.length > 1 ? c.id : undefined)} onClick={() => setOpen(false)} className="group -mx-2 flex items-center justify-between rounded-lg px-2 py-1.5 text-[15px] text-ink/80 transition hover:bg-ink/[0.04] hover:text-ink">
+                        <Link href={rangeHref(g.id, c.id)} onClick={() => setOpen(false)} className="group -mx-2 flex items-center justify-between rounded-lg px-2 py-1.5 text-[15px] text-ink/80 transition hover:bg-ink/[0.04] hover:text-ink">
                           <span>{c.label}</span>
                           <Icon name="arrow" className="h-3.5 w-3.5 -translate-x-1 text-ink/40 opacity-0 transition group-hover:translate-x-0 group-hover:opacity-100" />
                         </Link>
@@ -392,7 +394,7 @@ function MobileProductsMenu({ onNavigate, active }) {
                     <Icon name="chevron" className={`h-4 w-4 transition ${expanded ? "rotate-180" : ""}`} />
                   </button>
                 ) : (
-                  <Link href={rangeHref(g.id)} onClick={onNavigate} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-ink hover:bg-cream">
+                  <Link href={rangeHref(g.id, g.cats.length === 1 ? g.cats[0].id : undefined)} onClick={onNavigate} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-ink hover:bg-cream">
                     <Icon name={st.icon} className="h-4 w-4 text-aqua-deep" />
                     <span className="flex-1">{g.label}</span>
                     <span className="text-xs font-normal text-ink/40">{countIn(g.cats)}</span>
@@ -740,6 +742,107 @@ export function Stats() {
         {stats.map((stat, i) => (
           <CounterStat key={stat.label} index={i} {...stat} />
         ))}
+      </div>
+    </section>
+  );
+}
+
+
+
+// Files: public/videos/reel-1.mp4 ... reel-5.mp4
+const VIDEOS = [
+  { src: "/videos/reel-1.mp4" },
+  { src: "/videos/reel-2.mp4" },
+  { src: "/videos/reel-3.mp4" },
+  { src: "/videos/reel-4.mp4" },
+  { src: "/videos/reel-5.mp4" },
+];
+
+function VideoCard({ video, index, activeIndex, setActiveIndex }) {
+  const ref = useRef(null);
+  const [playing, setPlaying] = useState(false);
+  const [error, setError] = useState(false);
+
+  // Dusra video play ho to ye pause ho jaye
+  useEffect(() => {
+    if (activeIndex !== index && ref.current && !ref.current.paused) {
+      ref.current.pause();
+    }
+  }, [activeIndex, index]);
+
+  const handlePlay = async () => {
+    try {
+      setActiveIndex(index);
+      await ref.current.play();
+    } catch (e) {
+      console.error("Video play failed:", video.src, e);
+      setError(true);
+    }
+  };
+
+  return (
+    <div className="relative aspect-[9/16] w-full overflow-hidden rounded-2xl bg-black shadow-[0_20px_50px_-30px_rgba(11,27,58,.35)] ring-1 ring-ink/10 sm:rounded-3xl">
+      <video
+        ref={ref}
+        className="h-full w-full object-cover"
+        playsInline
+        preload="metadata"
+        controls={playing}
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        onEnded={() => setPlaying(false)}
+        onError={() => setError(true)}
+      >
+        <source src={`${video.src}#t=0.1`} type="video/mp4" />
+      </video>
+
+      {!playing && !error && (
+        <button
+          type="button"
+          aria-label={`Play video ${index + 1}`}
+          onClick={handlePlay}
+          className="absolute inset-0 grid place-items-center bg-black/10 transition hover:bg-black/20"
+        >
+          <span className="grid h-10 w-10 place-items-center rounded-full bg-white/90 shadow-lg">
+            <svg viewBox="0 0 24 24" fill="currentColor" className="ml-0.5 h-4 w-4 text-ink" aria-hidden="true">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </span>
+        </button>
+      )}
+
+      {error && (
+        <div className="absolute inset-0 grid place-items-center bg-black/80 p-3 text-center text-xs text-white">
+          Video load nahi hua.<br />Path / format check karo:<br />{video.src}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function InstagramVideos() {
+  const [activeIndex, setActiveIndex] = useState(null);
+
+  return (
+    <section className="relative overflow-hidden bg-gradient-to-br from-sky-50 via-cream to-lemon/20 py-14 sm:py-20">
+      <div className="pointer-events-none absolute -right-20 -top-24 h-80 w-80 rounded-full bg-aqua/15 blur-3xl" />
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
+        <SectionHead
+          eyebrow="Watch our work"
+          title="A closer look at Asmi."
+          sub="Watch our products, process and everyday work in action."
+        />
+        <div className="mx-auto mt-9 grid max-w-6xl grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
+          {VIDEOS.map((video, index) => (
+            <VideoCard
+              key={video.src}
+              video={video}
+              index={index}
+              activeIndex={activeIndex}
+              setActiveIndex={setActiveIndex}
+            />
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -1751,8 +1854,7 @@ export function Footer() {
             <Link href="/" aria-label="Asmi Enterprises home" className="inline-flex rounded-2xl bg-white px-5 py-3 shadow-lg shadow-black/20 transition hover:-translate-y-0.5">
               <Image src="/logo.webp" alt="Asmi Enterprises" width={600} height={212} className="h-12 w-auto sm:h-14" />
             </Link>
-            <p className="mt-6 font-display text-3xl">Freshness, manufactured.</p>
-            <p className="mt-3 max-w-md text-white/55">Manufacturer and wholesaler of hand wash, shower gel, dish wash, toilet & tap cleaners, air fresheners and industrial chemicals.</p>
+            <p className="mt-6 font-display text-3xl">housekeeping chemical manufacturer</p>
             <div className="mt-6 flex gap-3">
               {SOCIALS.map((s) => (
                 <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label} className="grid h-11 w-11 place-items-center rounded-full border border-white/15 text-white/70 transition hover:border-lemon hover:bg-lemon hover:text-ink">
@@ -1770,9 +1872,9 @@ export function Footer() {
           <div>
             <p className="text-sm font-semibold uppercase tracking-widest text-lemon">Contact</p>
             <ul className="mt-4 space-y-2.5 text-white/65">
-              <li><a href={`tel:${CONTACT.phone}`} className="hover:text-white">{CONTACT.phoneDisplay}</a> <span className="text-white/40">(WhatsApp)</span></li>
+              <li><a href={`https://wa.me/${CONTACT.whatsapp}`} target="_blank" rel="noreferrer" className="hover:text-white">{CONTACT.phoneDisplay}</a> <span className="text-white/40">(WhatsApp)</span></li>
               {CONTACT.otherPhones.map((p) => (
-                <li key={p.tel}><a href={`tel:${p.tel}`} className="hover:text-white">{p.display}</a></li>
+                <li key={p.tel}><a href={`https://wa.me/${p.tel.replace(/\D/g, "")}`} target="_blank" rel="noreferrer" className="hover:text-white">{p.display}</a> <span className="text-white/40">(WhatsApp)</span></li>
               ))}
               <li><a href={`mailto:${CONTACT.email}`} className="break-all hover:text-white">{CONTACT.email}</a></li>
               <li>{CONTACT.address}</li>
@@ -1782,7 +1884,6 @@ export function Footer() {
         </div>
         <div className="flex flex-col items-center justify-between gap-3 border-t border-white/10 py-6 text-sm text-white/55 sm:flex-row">
           <p>© {new Date().getFullYear()} {CONTACT.company}. All rights reserved | Powered By <Link className="font-bold" target="_blank" href="https://www.cybertricksmedia.com/">Cybertricksmedia Pvt Ltd</Link></p>
-          <p>*Germ-protection claims as stated on product labels.</p>
         </div>
       </div>
     </footer>
@@ -1855,7 +1956,7 @@ export function ProductDetail({ slug }) {
                 <Icon name={cat.icon} className="h-3.5 w-3.5" /> {group.label} · {cat.label}
               </Link>
               <h1 className="mt-4 font-display text-[clamp(2rem,6vw,3.25rem)] leading-[1.05] tracking-tight text-ink">{item.name}</h1>
-              <p className="mt-4 text-lg leading-relaxed text-ink/70">{CATEGORY_INFO[cat.id]}</p>
+              <p className="mt-4 text-lg leading-relaxed text-ink/70">{productDescription(item, cat)}</p>
               {item.note && (
                 <p className="mt-4 flex items-start gap-3 rounded-2xl bg-white p-4 text-ink/75 ring-1 ring-ink/5">
                   <Icon name="flask" className="mt-0.5 h-5 w-5 shrink-0 text-aqua-deep" /> {item.note}

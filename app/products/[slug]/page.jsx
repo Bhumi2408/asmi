@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { ProductDetail, CtaBand } from "../../components/site";
-import { ALL_PRODUCTS, CATEGORY_INFO, getProduct } from "../../components/catalog-data";
+import { ALL_PRODUCTS, productDescription, getProduct } from "../../components/catalog-data";
 
 // Pre-build one page per catalogue product (needed for the static export).
 export function generateStaticParams() {
@@ -15,7 +15,7 @@ export async function generateMetadata({ params }) {
   const name = item.code ? `${item.name} (${item.code})` : item.name;
   return {
     title: `${name} – Manufacturer & Supplier`,
-    description: `${name} by Asmi Enterprises, Delhi. Packs: ${item.packs.join(", ")}. ${CATEGORY_INFO[cat.id]} Bulk orders and best prices.`,
+    description: `${name} by Asmi Enterprises, Delhi. Packs: ${item.packs.join(", ")}. ${productDescription(item, cat)} Bulk orders and best prices.`,
     openGraph: { images: [`/catalog/${item.img}.webp`] },
   };
 }

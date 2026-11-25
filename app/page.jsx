@@ -1,4 +1,4 @@
-import { Hero, Marquee, Stats, Products, About, Fragrances, Process, Lab, Industries, Testimonials, Faq, Quote } from "./components/site";
+import { Hero, Marquee, Stats, Products, InstagramVideos, About, Fragrances, Process, Lab, Industries, Testimonials, Faq, Quote } from "./components/site";
 
 export default function Home() {
   return (
@@ -7,6 +7,7 @@ export default function Home() {
       <Marquee />
       <Stats />
       <Products />
+      <InstagramVideos />
       <About />
 
       <Fragrances />
